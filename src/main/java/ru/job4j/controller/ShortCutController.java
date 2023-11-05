@@ -10,6 +10,8 @@ import ru.job4j.model.Site;
 import ru.job4j.model.Url;
 import ru.job4j.service.ShortCutService;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping("/short_url")
 @AllArgsConstructor
@@ -18,16 +20,16 @@ public class ShortCutController {
     private final ShortCutService service;
 
     @PostMapping("/registration")
-    public ResponseEntity<UserDto> registration(@RequestBody Site site) {
+    public ResponseEntity<UserDto> registration(@Valid @RequestBody Site site) {
         return ResponseEntity.ok(service.registration(site));
     }
 
     @PostMapping("/convert")
     public ResponseEntity<String> regUrl(@RequestBody Url url) {
-        if (service.convert(url)) {
-            return ResponseEntity.ok(url.getShortUrl());
+        if (!service.convert(url)) {
+            return ResponseEntity.badRequest().body("URL name is incorrect");
         }
-        return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(url.getShortUrl());
     }
 
     @GetMapping("/redirect/{shortUrl}")
@@ -41,7 +43,11 @@ public class ShortCutController {
     }
 
     @GetMapping("/statistic")
-    public ResponseEntity<?> getStatistic(@RequestBody Site site) {
-        return ResponseEntity.ok(service.getStatistic(site).getStatisticForUrl());
+    public ResponseEntity<?> getStatistic(@Valid @RequestBody Site site) {
+        var statisticDto = service.getStatistic(site);
+        if (statisticDto == null) {
+            return ResponseEntity.badRequest().body("try later");
+        }
+        return ResponseEntity.ok(statisticDto.getStatisticForUrl());
     }
 }
